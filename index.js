@@ -44,43 +44,44 @@ app.get("/", async (req, res) => {
   const code = data?.data?.export?.response?.code;
   if (!code) return res.json("Export failed");
 
-  shell.exec("./extract.sh");
+  setTimeout(async () => {
+    shell.exec("./extract.sh");
 
-  const date = new Date().toUTCString().replace(/ |,/g, "_");
+    const date = new Date().toUTCString().replace(/ |,/g, "_");
 
-  // Creates a client from a Google service account key.
-  const gc = new Storage({
-    // uncomment the line below to run the functions locally
-    keyFilename: process.env.KEYFILE,
-    projectId: process.env.PROJECT_ID,
-  });
-
-  const BUCKET_NAME = process.env.BUCKET_NAME;
-  const bucket = gc.bucket(BUCKET_NAME);
-
-  for (const name of ["g01.gql_schema.gz", "g01.json.gz", "g01.schema.gz"]) {
-    const file = fs.readFileSync(`./data/${name}`);
-    if (!file) return res.json(`Error reading file ${name}`);
-
-    const destination = `backups/export_${date}/${name}`;
-
-    await bucket.upload(`./data/${name}`, {
-      destination,
-      metadata: {
-        // Enable long-lived HTTP caching headers
-        // Use only if the contents of the file will never change
-        // (If the contents will change, use cacheControl: 'no-cache')
-        cacheControl: "private",
-        contentType: "application/gzip",
-        contentEncoding: "7bit",
-      },
+    // Creates a client from a Google service account key.
+    const gc = new Storage({
+      // uncomment the line below to run the functions locally
+      keyFilename: process.env.KEYFILE,
+      projectId: process.env.PROJECT_ID,
     });
 
-    //   clean up
-    shell.exec(`rm -rf ./data/${name}`);
-  }
+    const BUCKET_NAME = process.env.BUCKET_NAME;
+    const bucket = gc.bucket(BUCKET_NAME);
 
-  res.json("Ok");
+    for (const name of ["g01.gql_schema.gz", "g01.json.gz", "g01.schema.gz"]) {
+      const file = fs.readFileSync(`./data/${name}`);
+      if (!file) return res.json(`Error reading file ${name}`);
+
+      const destination = `backups/export_${date}/${name}`;
+
+      await bucket.upload(`./data/${name}`, {
+        destination,
+        metadata: {
+          // Enable long-lived HTTP caching headers
+          // Use only if the contents of the file will never change
+          // (If the contents will change, use cacheControl: 'no-cache')
+          cacheControl: "private",
+          contentType: "application/gzip",
+          contentEncoding: "7bit",
+        },
+      });
+
+      //   clean up
+      shell.exec(`rm -rf ./data/${name}`);
+    }
+    res.json("Ok");
+  }, 3000);
 });
 
 app.listen(port, () => {
