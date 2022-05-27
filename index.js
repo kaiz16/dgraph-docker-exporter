@@ -81,7 +81,7 @@ app.get("/", async (req, res) => {
       shell.exec(`rm -rf ./data/${name}`);
     }
     res.json("Ok");
-  }, 3000);
+  }, 5000);
 });
 
 app.listen(port, () => {
