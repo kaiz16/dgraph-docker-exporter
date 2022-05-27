@@ -1,20 +1,15 @@
-import express from "express";
-import axios from "axios";
-import shell from "shelljs";
-import FormData from "form-data";
-import fs from "fs";
+const express = require("express");
+const { Storage } = require("@google-cloud/storage");
+const axios = require("axios");
+const shell = require("shelljs");
+const fs = require("fs");
+const loadEnv = require("./loadEnv");
+loadEnv();
 const app = express();
 const port = 9999;
 
-const PRODUCTION = false;
+const graphqlEndpoint = "http://127.0.0.1:8080/admin";
 
-const uploadEndpoint = PRODUCTION
-  ? "https://asia-southeast2-hantargo-v1.cloudfunctions.net/upload"
-  : "https://asia-southeast2-hantargo-v1.cloudfunctions.net/upload-staging";
-
-const graphqlEndpoint = PRODUCTION
-  ? "https://api.hantargo.co/admin"
-  : "http://127.0.0.1:8080/admin";
 app.get("/", async (req, res) => {
   const query = JSON.stringify({
     query: `
@@ -22,7 +17,7 @@ app.get("/", async (req, res) => {
           export(input: {
               format: "json"
           }){
-              response{ 
+              response{
                   code
                   message
               }
@@ -52,23 +47,34 @@ app.get("/", async (req, res) => {
   shell.exec("./extract.sh");
 
   const date = new Date().toUTCString().replace(/ |,/g, "_");
+
+  // Creates a client from a Google service account key.
+  const gc = new Storage({
+    // uncomment the line below to run the functions locally
+    keyFilename: process.env.KEYFILE,
+    projectId: process.env.PROJECT_ID,
+  });
+
+  const BUCKET_NAME = process.env.BUCKET_NAME;
+  const bucket = gc.bucket(BUCKET_NAME);
+
   for (const name of ["g01.gql_schema.gz", "g01.json.gz", "g01.schema.gz"]) {
     const file = fs.readFileSync(`./data/${name}`);
     if (!file) return res.json(`Error reading file ${name}`);
 
-    const form = new FormData();
-    form.append("file", file, name);
+    const destination = `backups/export_${date}/${name}`;
 
-    await axios
-      .post(`${uploadEndpoint}/backups/export_${date}`, form, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      .catch((err) => {
-        console.log(err);
-        return res.json("Upload failed");
-      });
+    await bucket.upload(`./data/${name}`, {
+      destination,
+      metadata: {
+        // Enable long-lived HTTP caching headers
+        // Use only if the contents of the file will never change
+        // (If the contents will change, use cacheControl: 'no-cache')
+        cacheControl: "private",
+        contentType: "application/gzip",
+        contentEncoding: "7bit",
+      },
+    });
 
     //   clean up
     shell.exec(`rm -rf ./data/${name}`);
