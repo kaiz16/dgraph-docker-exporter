@@ -5,9 +5,16 @@ import FormData from "form-data";
 import fs from "fs";
 const app = express();
 const port = 9999;
-const uploadEndpoint =
-  "https://asia-southeast2-hantargo-v1.cloudfunctions.net/upload-staging";
 
+const PRODUCTION = false;
+
+const uploadEndpoint = PRODUCTION
+  ? "https://asia-southeast2-hantargo-v1.cloudfunctions.net/upload"
+  : "https://asia-southeast2-hantargo-v1.cloudfunctions.net/upload-staging";
+
+const graphqlEndpoint = PRODUCTION
+  ? "https://api.hantargo.co/admin"
+  : "http://127.0.0.1:8080/admin";
 app.get("/", async (req, res) => {
   const query = JSON.stringify({
     query: `
@@ -28,7 +35,7 @@ app.get("/", async (req, res) => {
   if (!token) return res.json("Authorization failed");
 
   const { data } = await axios
-    .post("http://127.0.0.1:8080/admin", query, {
+    .post(graphqlEndpoint, query, {
       headers: {
         "Content-Type": "application/json",
         "X-Dgraph-AuthToken": token,
@@ -62,7 +69,7 @@ app.get("/", async (req, res) => {
         console.log(err);
         return res.json("Upload failed");
       });
-    
+
     //   clean up
     shell.exec(`rm -rf ./data/${name}`);
   }
