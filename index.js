@@ -68,20 +68,25 @@ app.get("/", async (req, res) => {
   if (!token) return res.json("Authorization failed");
 
   // Export Data
+  console.log("Export data");
   const { code, message } = await EXPORT_DATA(token).catch((err) => {
     console.log(err);
     return res.json("Export failed");
   });
-
+  console.log(code, message);
   if (!code || code !== "Success") {
     return res.json("Export failed");
   }
 
   // Check export status every 1s
+  console.log("Check task");
   const taskID = message.split(" ").pop();
+  console.log("Task ID", taskID);
 
   let taskStatus;
-  let timer = setInterval(async () => {
+  const timer = (ms) => new Promise((res) => setTimeout(res, ms));
+
+  while (true) {
     const { status } = await CHECK_TASK(taskID, token).catch((err) => {
       console.log(err);
       return res.json("Export failed");
@@ -90,10 +95,12 @@ app.get("/", async (req, res) => {
     taskStatus = status;
 
     if (status === "Success" || status === "Failed" || status === "Unknown") {
-      clearInterval(timer);
+      break;
     }
-  }, 1000);
+    await timer(1000);
+  }
 
+  console.log("Task Status", taskStatus);
   if (taskStatus !== "Success") {
     return res.json("Export failed");
   }
