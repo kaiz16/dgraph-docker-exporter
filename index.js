@@ -10,7 +10,7 @@ const port = 9999;
 
 const graphqlEndpoint = "http://127.0.0.1:8080/admin";
 
-async function EXPORT_DATA() {
+async function EXPORT_DATA(token) {
   const query = JSON.stringify({
     query: `
       mutation ExportDB{
@@ -36,7 +36,7 @@ async function EXPORT_DATA() {
   return data?.data?.export?.response || {};
 }
 
-async function CHECK_TASK(id) {
+async function CHECK_TASK(id, token) {
   const query = JSON.stringify({
     query: `
       query Task($id: String!) {
@@ -68,7 +68,7 @@ app.get("/", async (req, res) => {
   if (!token) return res.json("Authorization failed");
 
   // Export Data
-  const { code, message } = await EXPORT_DATA().catch((err) => {
+  const { code, message } = await EXPORT_DATA(token).catch((err) => {
     console.log(err);
     return res.json("Export failed");
   });
@@ -82,7 +82,7 @@ app.get("/", async (req, res) => {
 
   let taskStatus;
   let timer = setInterval(async () => {
-    const { status } = await CHECK_TASK(taskID).catch((err) => {
+    const { status } = await CHECK_TASK(taskID, token).catch((err) => {
       console.log(err);
       return res.json("Export failed");
     });
