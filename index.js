@@ -68,7 +68,7 @@ app.get("/", async (req, res) => {
   if (!token) return res.json("Authorization failed");
 
   // Export Data
-  const { code, message } = await EXPORT_DATA().catch(() => {
+  const { code, message } = await EXPORT_DATA().catch((err) => {
     console.log(err);
     return res.json("Export failed");
   });
@@ -82,7 +82,7 @@ app.get("/", async (req, res) => {
 
   let taskStatus;
   let timer = setInterval(async () => {
-    const { status } = await CHECK_TASK(taskID).catch(() => {
+    const { status } = await CHECK_TASK(taskID).catch((err) => {
       console.log(err);
       return res.json("Export failed");
     });
