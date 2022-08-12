@@ -68,20 +68,16 @@ app.get("/", async (req, res) => {
   if (!token) return res.json("Authorization failed");
 
   // Export Data
-  console.log("Export data");
   const { code, message } = await EXPORT_DATA(token).catch((err) => {
     console.log(err);
     return res.json("Export failed");
   });
-  console.log(code, message);
   if (!code || code !== "Success") {
     return res.json("Export failed");
   }
 
   // Check export status every 1s
-  console.log("Check task");
   const taskID = message.split(" ").pop();
-  console.log("Task ID", taskID);
 
   let taskStatus;
   const timer = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -100,14 +96,17 @@ app.get("/", async (req, res) => {
     await timer(1000);
   }
 
-  console.log("Task Status", taskStatus);
   if (taskStatus !== "Success") {
     return res.json("Export failed");
   }
 
   shell.exec("./extract.sh");
 
-  const date = new Date().toLocaleString().replace(/\//g, "-").replace(/ |,/g, "_");
+  // Assuming DigitalOcean droplet uses UTC as default timezone
+  const date = new Date()
+    .toLocaleString()
+    .replace(/\//g, "-")
+    .replace(/ |, /g, "_");
 
   // Creates a client from a Google service account key.
   const gc = new Storage({
@@ -144,5 +143,5 @@ app.get("/", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Exporter is running on port ${port}`);
+  console.log(`🚀 Server is running on port ${port}`);
 });
