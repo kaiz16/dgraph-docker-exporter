@@ -81,7 +81,7 @@ app.get("/", async (req, res) => {
   const taskID = message.split(" ").pop();
 
   let taskStatus;
-  let timer = setInterval(() => {
+  let timer = setInterval(async () => {
     const { status } = await CHECK_TASK(taskID).catch(() => {
       console.log(err);
       return res.json("Export failed");
