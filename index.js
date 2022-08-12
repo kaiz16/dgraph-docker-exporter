@@ -105,6 +105,8 @@ app.get("/", async (req, res) => {
     return res.json("Export failed");
   }
 
+  shell.exec("./extract.sh");
+
   const date = new Date().toLocaleTimeString().replace(/ |,/g, "_");
 
   // Creates a client from a Google service account key.
